@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm
+from forms import UserAddForm, LoginForm, MessageForm, EditForm
 from models import db, connect_db, User, Message
 
 CURR_USER_KEY = "curr_user"
@@ -222,9 +222,34 @@ def profile():
     # IMPLEMENT THIS
 
     user_id = session[CURR_USER_KEY]
-    user = User.query.get_or_404(user_id)
 
-    return render_template("/users/detail.html", user=user)
+    form = EditForm()
+
+    if form.validate_on_submit():
+        user = User.query.get_or_404(user_id)
+        user = User.authenticate(user.username, form.password.data)
+        
+        if user:
+            try:
+                user.username = form.username.data
+                user.email = form.email.data
+                user.image_url = form.image_url.data or User.image_url.default.arg
+                user.header_image_url = form.header_image_url.data or User.header_image_url.default.arg
+                user.bio = form.bio.data
+
+                db.session.commit()
+            
+            except IntegrityError:
+                flash("Username/Email already taken!", "danger")
+                return redirect("/")
+            
+            flash(f"Profile Updated Successfully!", "success")
+            return redirect(f"/users/{ user.id }")
+
+        flash("Invalid credentials. Can't Update The Profile.", 'danger')
+        return redirect("/")
+
+    return render_template("/users/edit.html", user_id = user_id, form=form)
 
 
 @app.route('/users/delete', methods=["POST"])
