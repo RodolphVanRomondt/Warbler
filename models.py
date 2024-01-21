@@ -114,7 +114,7 @@ class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(140), nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow())
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='cascade'), nullable=False)
     user = db.relationship('User')
 
 

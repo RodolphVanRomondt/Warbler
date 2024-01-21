@@ -12,9 +12,6 @@ CURR_USER_KEY = "curr_user"
 
 app = Flask(__name__)
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
-
 # Get DB_URI from environ variable (useful for production/testing) or,
 # if not set there, use development local db.
 app.config['SQLALCHEMY_DATABASE_URI'] = (
@@ -259,12 +256,14 @@ def delete_user():
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
+    
+    User.query.filter_by(id = g.user.id).delete()
 
     do_logout()
 
-    db.session.delete(g.user)
     db.session.commit()
 
+    flash("User Deleted!", "success")
     return redirect("/signup")
 
 
