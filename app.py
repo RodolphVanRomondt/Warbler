@@ -221,6 +221,11 @@ def profile():
 
     # IMPLEMENT THIS
 
+    user_id = session[CURR_USER_KEY]
+    user = User.query.get_or_404(user_id)
+
+    return render_template("/users/detail.html", user=user)
+
 
 @app.route('/users/delete', methods=["POST"])
 def delete_user():

@@ -2,7 +2,9 @@
 
 {% block content %}
 
-<div id="warbler-hero" class="full-width"></div>
+<div id="warbler-hero" class="full-width">
+  <img alt="Header image for {{ user.username }}" style='background-image: url("https://media.licdn.com/dms/image/D5616AQHbwZScJZpQUg/profile-displaybackgroundimage-shrink_350_1400/0/1696898147718?e=1711584000&v=beta&t=f02wSq_OszdbP2QnY7pBxcE5TAGOw7E9S_gxyd1ltGU")'>
+</div>
 <img src="{{ user.image_url }}" alt="Image for {{ user.username }}" id="profile-avatar">
 <div class="row full-width">
   <div class="container">
@@ -58,8 +60,8 @@
 <div class="row">
   <div class="col-sm-3">
     <h4 id="sidebar-username">@{{ user.username }}</h4>
-    <p>BIO HERE</p>
-    <p class="user-location"><span class="fa fa-map-marker"></span>LOCATION HERE</p>
+    <p>{{ user.bio }}</p>
+    <p class="user-location"><span class="fa fa-map-marker"></span> {{ user.location }}</p>
   </div>
 
   {% block user_details %}
