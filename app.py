@@ -6,7 +6,8 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm, EditForm
-from models import db, connect_db, User, Message
+from models import db, connect_db, User, Message, Likes
+from functions import add_remove_like
 
 CURR_USER_KEY = "curr_user"
 
@@ -145,7 +146,16 @@ def list_users():
 def users_show(user_id):
     """Show user profile."""
 
+    # if not g.user:
+    #     flash("Access unauthorized.", "danger")
+    #     return redirect("/login")
+
     user = User.query.get_or_404(user_id)
+
+    if g.user:
+        likes = [like.id for like in g.user.likes]
+    
+    likes = None
 
     # snagging messages in order from the database;
     # user.messages won't be in order by default
@@ -155,7 +165,21 @@ def users_show(user_id):
                 .order_by(Message.timestamp.desc())
                 .limit(100)
                 .all())
-    return render_template('users/show.html', user=user, messages=messages)
+
+    return render_template('users/show.html', user=user, messages=messages, likes=likes)
+
+
+@app.route("/users/<int:user_id>/<int:message_id>", methods=["GET", "POST"])
+def user_show_post(user_id, message_id):
+    """ Show User Profile (POST). """
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    add_remove_like(message_id, g.user.likes)
+
+    return redirect(f"/users/{user_id}")
 
 
 @app.route('/users/<int:user_id>/following')
@@ -180,6 +204,35 @@ def users_followers(user_id):
 
     user = User.query.get_or_404(user_id)
     return render_template('users/followers.html', user=user)
+
+
+@app.route("/users/<int:user_id>/likes")
+def user_likes(user_id):
+    """ Show list of Warble's likes for this user. """
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    user = User.query.get_or_404(user_id)
+    likes = [like.id for like in user.likes]
+
+    return render_template("users/likes.html", user=user, likes=likes)
+
+
+@app.route("/messages/unlike/<int:message_id>", methods=["POST"])
+def user_unlike(message_id):
+    """ Have currently-logged-in-user unlike a message. """
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    Likes.query.filter(Likes.message_id == message_id, Likes.user_id == g.user.id).delete()
+
+    db.session.commit()
+
+    return redirect(f"/users/{g.user.id}/likes")
 
 
 @app.route('/users/follow/<int:follow_id>', methods=['POST'])
@@ -210,6 +263,29 @@ def stop_following(follow_id):
     db.session.commit()
 
     return redirect(f"/users/{g.user.id}/following")
+
+@app.route("/users/add_like/<int:message_id>", methods=["POST"])
+def add_like(message_id):
+    """ Add like to Warble. """
+
+    # likes = [like.id for like in g.user.likes]
+
+    # if message_id not in likes:
+    #     like = Likes(user_id=g.user.id, message_id=message_id)
+
+    #     db.session.add(like)
+    #     # db.session.commit()
+
+    #     # return redirect("/")
+    
+    # else:
+    #     Likes.query.filter(Likes.message_id == message_id).delete()
+
+    # db.session.commit()
+
+    add_remove_like(message_id, g.user.likes)
+
+    return redirect("/")
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
@@ -330,6 +406,8 @@ def homepage():
 
     if g.user:
 
+        likes = [msg.id for msg in g.user.likes]
+
         user_following_msg = [g.user.id] + [id.id for id in g.user.following]
 
         messages = (Message
@@ -339,7 +417,7 @@ def homepage():
                     .limit(100)
                     .all())
 
-        return render_template('home.html', messages=messages)
+        return render_template('home.html', messages=messages, likes=likes)
 
     else:
         return render_template('home-anon.html')

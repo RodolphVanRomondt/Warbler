@@ -18,6 +18,9 @@ class Likes(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='cascade'))
     message_id = db.Column(db.Integer, db.ForeignKey('messages.id', ondelete='cascade'), unique=True)
 
+    def __repr__(self):
+        return f"<Likes {self.user_id}, {self.message_id}>"
+
 
 class Follows(db.Model):
     """Connection of a follower <-> followed_user."""
@@ -69,6 +72,12 @@ class User(db.Model):
         """Is this user following `other_use`?"""
 
         found_user_list = [user for user in self.following if user == other_user]
+        return len(found_user_list) == 1
+    
+    def is_like(self, message):
+        """ Is this user liked `msg`? """
+
+        found_user_list = [ msg for msg in self.likes if msg == message]
         return len(found_user_list) == 1
 
     @classmethod
