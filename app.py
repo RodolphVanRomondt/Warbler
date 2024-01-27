@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm, EditForm
 from models import db, connect_db, User, Message, Likes
-from functions import add_remove_like
+# from functions import add_remove_like
 
 CURR_USER_KEY = "curr_user"
 
@@ -25,6 +25,20 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 # toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
+
+def add_remove_like(msg_id, likes_list):
+
+    likes = [like.id for like in likes_list]
+
+    if msg_id not in likes:
+        like = Likes(user_id=g.user.id, message_id=msg_id)
+
+        db.session.add(like)
+    
+    else:
+        Likes.query.filter(Likes.message_id == msg_id).delete()
+
+    db.session.commit()
 
 
 ##############################################################################
@@ -154,8 +168,8 @@ def users_show(user_id):
 
     if g.user:
         likes = [like.id for like in g.user.likes]
-    
-    likes = None
+    else:
+        likes = None
 
     # snagging messages in order from the database;
     # user.messages won't be in order by default
@@ -175,6 +189,9 @@ def user_show_post(user_id, message_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
+        return redirect("/")
+    
+    if request.method == "GET":
         return redirect("/")
 
     add_remove_like(message_id, g.user.likes)
@@ -268,21 +285,6 @@ def stop_following(follow_id):
 def add_like(message_id):
     """ Add like to Warble. """
 
-    # likes = [like.id for like in g.user.likes]
-
-    # if message_id not in likes:
-    #     like = Likes(user_id=g.user.id, message_id=message_id)
-
-    #     db.session.add(like)
-    #     # db.session.commit()
-
-    #     # return redirect("/")
-    
-    # else:
-    #     Likes.query.filter(Likes.message_id == message_id).delete()
-
-    # db.session.commit()
-
     add_remove_like(message_id, g.user.likes)
 
     return redirect("/")
@@ -373,22 +375,27 @@ def messages_add():
 def messages_show(message_id):
     """Show a message."""
 
-    msg = Message.query.get(message_id)
+    msg = Message.query.get_or_404(message_id)
     return render_template('messages/show.html', message=msg)
 
 
-@app.route('/messages/<int:message_id>/delete', methods=["POST"])
+@app.route('/messages/<int:message_id>/delete', methods=["GET", "POST"])
 def messages_destroy(message_id):
     """Delete a message."""
 
-    if not g.user:
+    msg = Message.query.get(message_id)
+
+    if not msg:
+        return redirect("/")
+
+    if not g.user or g.user.id != msg.user_id:
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    msg = Message.query.get(message_id)
     db.session.delete(msg)
     db.session.commit()
 
+    flash("Message Deleted.", "success")
     return redirect(f"/users/{g.user.id}")
 
 

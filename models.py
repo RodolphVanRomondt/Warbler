@@ -73,12 +73,6 @@ class User(db.Model):
 
         found_user_list = [user for user in self.following if user == other_user]
         return len(found_user_list) == 1
-    
-    def is_like(self, message):
-        """ Is this user liked `msg`? """
-
-        found_user_list = [ msg for msg in self.likes if msg == message]
-        return len(found_user_list) == 1
 
     @classmethod
     def signup(cls, username, email, password, image_url):
@@ -90,8 +84,8 @@ class User(db.Model):
         hashed_pwd = bcrypt.generate_password_hash(password).decode('UTF-8')
 
         user = User(username=username, email=email, password=hashed_pwd, image_url=image_url,)
-
         db.session.add(user)
+
         return user
 
     @classmethod
@@ -124,6 +118,7 @@ class Message(db.Model):
     text = db.Column(db.String(140), nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow())
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='cascade'), nullable=False)
+    
     user = db.relationship('User')
 
 

@@ -18,14 +18,11 @@
             <p>{{ message.text }}</p>
           </div>
 
-          {% if g.user.username == user.username or not likes %}
+          {% if g.user.username == user.username or likes == None %}
 
           {% else %}
             <form method="POST" action="/users/{{ user.id }}/{{ message.id }}" id="messages-form">
-              <button class="
-                                    btn 
-                                    btn-sm 
-                                    {{'btn-primary' if message.id in likes else 'btn-secondary'}}">
+              <button class="btn btn-sm {{'btn-primary' if message.id in likes else 'btn-secondary'}}">
                 <i class="fa fa-thumbs-up"></i>
               </button>
             </form>
